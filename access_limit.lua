@@ -39,10 +39,12 @@ local lc = ngx.shared.limit_config
 
 local sc = lc:get("access_limit")
 local su = lc:get("seconds_unit")
-local key = ngx.md5(realIP..domain..uri)
+local key = ngx.md5(realIP)
 if  sc then
     local counter,err = cache:incr(key)
-    ngx.log(ngx.ERR,counter, err)
+    if err ~= nil then
+        ngx.exit(ngx.HTT_FORBIDDEN)
+    end
     if counter == 1 then
         cache:expire(key, su)
     elseif counter > sc then
@@ -53,7 +55,10 @@ end
 local urlLimit = lc:get(domain .. uri)
 
 if urlLimit then
-    local counter = cache:incr(key)
+    local counter, err = cache:incr(key)
+    if err ~= nil then
+        ngx.exit(ngx.HTTP_FORBIDDEN)
+    end
     if counter == 1 then
         cache:expire(key, su)
     elseif counter >  urlLimit then 
